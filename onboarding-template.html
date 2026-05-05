@@ -1308,7 +1308,6 @@ async function cmdCenterSaveAll() {
   if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
   updateSaveStatus('Saving...');
   saveToLocalStorage();
-  await saveDataToDisk();
   clearDirty();
   updateSaveStatus('Saved ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
   renderAll();
