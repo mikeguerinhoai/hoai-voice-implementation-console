@@ -1,0 +1,46 @@
+{
+  "notion": {
+    "database_id": "348c7b0f1c108147a3b1f4f6a17b127a",
+    "welcome_template_page_id": "2a7f57655f7980f7be9de4b2c53a00fe"
+  },
+  "cohorts_to_sync": ["2026-05", "2026-06", "2026-07"],
+  "questionnaire_link": "https://forms.office.com/r/F2ZRN05Vrt",
+  "support_email": "ask@hoai.com",
+  "stages": [
+    {"id": "welcome_package", "name": "Welcome Package", "field": "Welcome Package", "type": "date"},
+    {"id": "questionnaire", "name": "Questionnaire", "field": "Questionnaire Complete", "type": "checkbox"},
+    {"id": "aop_config", "name": "AOP Configuration", "field": "AOP Configuration", "type": "checkbox"},
+    {"id": "alignment_call", "name": "Alignment Call", "field": "Alignment Call", "type": "date"},
+    {"id": "hoai_testing", "name": "HOAi Internal Testing", "field": "HOAi Internal Testing", "type": "date"},
+    {"id": "hoai_testing_complete", "name": "HOAi Testing Complete", "field": "HOAi Testing Complete?", "type": "checkbox"},
+    {"id": "customer_testing", "name": "Customer Internal Testing", "field": "Customer Internal Testing", "type": "date"},
+    {"id": "customer_testing_complete", "name": "Customer Testing Complete", "field": "Customer Testing Complete?", "type": "checkbox"},
+    {"id": "live_testing", "name": "Live Testing", "field": "Live Testing Date", "type": "date"},
+    {"id": "live_testing_complete", "name": "Live Testing Complete", "field": "Live Testing Complete", "type": "checkbox"},
+    {"id": "activation", "name": "Activation", "field": "Activation Date", "type": "date"}
+  ],
+  "thresholds": {
+    "stale_days": 7,
+    "deck_lead_days": 2,
+    "aop_reminder_days": 7,
+    "checkin_days_after_customer_testing": 3
+  },
+  "timeline_offsets": {
+    "questionnaire_deadline_days": 5,
+    "aop_target_days": 7,
+    "alignment_call_days": 10,
+    "hoai_testing_days": 14,
+    "customer_testing_days": 15,
+    "live_testing_days": 22
+  },
+  "onedrive_base": "OneDrive - Vantaca, LLC/HOAi - Documents/Voice/Implementation",
+  "fde_emails": {
+    "MacKenzie": "mackenzie@vantaca.com",
+    "Unassigned": null
+  },
+  "health_rules": {
+    "green": "On track — no milestone overdue",
+    "amber": "Behind — current stage approaching stale threshold",
+    "red": "Stalled — no progress for 7+ days"
+  }
+}

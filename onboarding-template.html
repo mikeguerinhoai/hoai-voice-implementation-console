@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOAi Voice Implementation Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg2: #f5f6f8;
+  --bg3: #ebedf0;
+  --surface: #ffffff;
+  --primary: #3358cc;
+  --primary-light: #ecf1ff;
+  --primary-dark: #254cac;
+  --accent: #ecf1ff;
+  --border: #dee2e5;
+  --text: #111111;
+  --text2: #5a6068;
+  --muted: #8c929a;
+  --green: #007b22;
+  --green-bg: #e6f4ea;
+  --amber: #cd6900;
+  --amber-bg: #fef3e0;
+  --red: #d60000;
+  --red-bg: #fce8e8;
+  --teal: #017582;
+  --teal-bg: #e0f5f7;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,.07), 0 4px 6px rgba(0,0,0,.04);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 100px;
+  --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --transition: 200ms cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg2);color:var(--text);font-size:13px;min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+
+/* Header — dark gradient */
+.hdr{padding:18px 28px;background:linear-gradient(135deg,#09111c 0%,#1a2744 100%);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.logo{font-size:17px;font-weight:700;letter-spacing:-.4px;display:flex;align-items:center;gap:8px;color:#fff}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.hdr-meta{font-size:11px;color:rgba(255,255,255,.6)}
+
+/* Tabs — pill style */
+.tabs{display:flex;gap:4px;padding:8px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.tab{padding:8px 16px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;border-radius:var(--radius-sm);border-bottom:none;transition:background var(--transition),color var(--transition)}
+.tab:hover{background:var(--bg2);color:var(--text)}
+.tab.active{background:var(--primary-light);color:var(--primary);font-weight:600}
+
+/* Cohort filter bar */
+.filter-bar{display:flex;align-items:center;gap:12px;padding:8px 28px;background:var(--surface);border-bottom:1px solid var(--border)}
+.filter-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px}
+.filter-pills{display:flex;gap:4px;flex-wrap:wrap}
+.filter-pill{padding:5px 14px;font-size:12px;font-weight:500;border-radius:var(--radius-pill);border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all var(--transition);font-family:inherit}
+.filter-pill:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.filter-pill.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+/* Workflow rows in detail overlay */
+.wf-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.wf-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.wf-row:last-child{border-bottom:none}
+.wf-info{flex:1}
+.wf-name{font-size:12px;font-weight:600;color:var(--text)}
+.wf-desc{font-size:11px;color:var(--text2);margin-top:2px}
+.wf-status{font-size:10px;margin-top:2px}
+.btn-copy{padding:6px 14px;font-size:11px;font-weight:600;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;transition:all var(--transition);white-space:nowrap}
+.btn-copy:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.btn-copy.copied{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+
+.content{padding:24px 28px 60px}
+.panel{display:none}.panel.active{display:block}
+
+/* KPI Cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.kpi{background:var(--surface);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-left:3px solid var(--border);transition:box-shadow var(--transition),transform var(--transition)}
+.kpi:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kpi-lbl{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.kpi-val{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.kpi.hero{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);color:#fff;border-left-color:transparent}
+.kpi.hero .kpi-lbl{color:rgba(255,255,255,.7)}
+.kpi.hero .kpi-val{color:#fff}
+
+/* Cards */
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;margin-bottom:16px}
+.card-hdr{padding:14px 20px;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--bg2);padding:12px 16px;text-align:left;font-weight:600;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+td{padding:10px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:nth-child(even){background:var(--bg2)}
+tr:hover{background:var(--bg3)}
+.num{text-align:right}
+
+/* Badges — pill shaped */
+.badge{display:inline-block;padding:3px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;white-space:nowrap}
+.b-green{background:var(--green-bg);color:var(--green)}
+.b-amber{background:var(--amber-bg);color:var(--amber)}
+.b-red{background:var(--red-bg);color:var(--red)}
+.b-blue{background:var(--primary-light);color:var(--primary)}
+.b-gray{background:var(--bg2);color:var(--text2)}
+
+/* Charts */
+.chart-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+.chart-box{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);padding:20px}
+.chart-title{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.3px}
+canvas{max-height:200px}
+.gantt-canvas{max-height:none}
+
+/* Section titles with accent bar */
+.sec{display:flex;align-items:center;justify-content:space-between;margin:24px 0 10px}
+.sec-ttl{font-size:15px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center}
+.sec-ttl::before{content:'';display:inline-block;width:3px;height:16px;background:var(--primary);border-radius:2px;margin-right:8px}
+
+/* Detail overlay — slide-in */
+.detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(9,17,28,.4);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+.detail-overlay.open{display:flex}
+.detail-panel{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);max-width:800px;width:100%;max-height:85vh;overflow-y:auto;animation:slideUp 250ms cubic-bezier(.4,0,.2,1)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.detail-hdr{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.detail-hdr h2{font-size:17px;font-weight:700}
+.detail-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2);padding:4px 8px;border-radius:var(--radius-sm);transition:background var(--transition)}
+.detail-close:hover{background:var(--bg2)}
+.detail-body{padding:24px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.detail-field{font-size:11px}
+.detail-field label{display:block;font-weight:600;color:var(--text2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;font-size:9px}
+.detail-field span{font-size:12px;color:var(--text)}
+
+/* Add Customer form */
+.add-form label{display:block;font-weight:600;color:var(--text2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;font-size:9px}
+.add-form input,.add-form select,.add-form textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--bg);color:var(--text);box-sizing:border-box}
+.add-form textarea{resize:vertical;min-height:60px}
+.add-form .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.add-form .form-field{margin-bottom:0}
+.add-form .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* Milestone dots */
+.ms-timeline{display:flex;align-items:center;gap:0;overflow-x:auto;padding:16px 0}
+.ms-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;border:2px solid var(--border);background:var(--surface);color:var(--text2);position:relative;transition:transform var(--transition)}
+.ms-dot:hover{transform:scale(1.1)}
+.ms-dot.complete{background:var(--green);border-color:var(--green);color:#fff}
+.ms-dot.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+.ms-dot.blocked{background:var(--red);border-color:var(--red);color:#fff}
+.ms-conn{height:3px;flex:1;min-width:8px;background:var(--border);border-radius:2px}
+.ms-conn.complete{background:var(--green)}
+.ms-conn.active{background:var(--primary)}
+.ms-conn.blocked{background:var(--red)}
+
+/* Footer */
+.footer{padding:16px 28px;text-align:center;font-size:11px;color:var(--muted);border-top:1px solid var(--border);background:var(--surface)}
+
+/* Kanban Board */
+.kanban-board{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;overflow-x:auto;min-height:400px;padding-bottom:16px}
+.kanban-col{background:var(--bg2);border-radius:var(--radius);padding:8px;min-width:150px;transition:background var(--transition)}
+.kanban-col-hdr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:8px 10px;border-radius:var(--radius-sm);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;color:rgba(0,0,0,.7)}
+.kanban-col-count{font-size:10px;font-weight:600;opacity:.6;min-width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.08)}
+.kanban-card{background:var(--surface);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;box-shadow:var(--shadow-sm);border-left:3px solid transparent;cursor:grab;transition:box-shadow var(--transition),transform var(--transition)}
+.kanban-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kanban-card.dragging{opacity:.4;transform:rotate(2deg)}
+.kanban-card-name{font-size:12px;font-weight:600;margin-bottom:6px;line-height:1.3}
+.kanban-card-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:10px;color:var(--text2)}
+.kanban-col.drag-over{background:var(--primary-light);outline:2px dashed var(--primary);outline-offset:-2px}
+.health-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.health-dot.green{background:var(--green)}.health-dot.amber{background:var(--amber)}.health-dot.red{background:var(--red)}
+
+/* HTML Gantt */
+.html-gantt{position:relative;padding:8px 0}
+.gantt-time-hdr{display:flex;margin-left:180px;margin-right:8px;height:22px;font-size:10px;color:var(--muted);position:relative;border-bottom:1px solid var(--border);margin-bottom:4px}
+.gantt-time-mark{position:absolute;top:0;font-size:10px;color:var(--muted);white-space:nowrap;transform:translateX(-50%)}
+.gantt-row{display:flex;align-items:center;height:34px;margin-bottom:2px}
+.gantt-row:hover .gantt-label{color:var(--primary)}
+.gantt-label{width:180px;flex-shrink:0;font-size:11px;font-weight:500;padding-right:12px;text-align:right;cursor:pointer;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color var(--transition)}
+.gantt-track{flex:1;position:relative;height:22px;background:var(--bg2);border-radius:4px;margin-right:8px}
+.gantt-seg{position:absolute;height:100%;border-radius:3px;cursor:pointer;transition:filter var(--transition);display:flex;align-items:center;justify-content:center;min-width:2px}
+.gantt-seg:hover{filter:brightness(1.08);z-index:2}
+.gantt-seg .seg-label{font-size:8px;font-weight:700;color:rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;padding:0 3px}
+.gantt-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--border);z-index:3;cursor:pointer;transition:all var(--transition)}
+.gantt-dot:hover{transform:translate(-50%,-50%) scale(1.4);border-color:var(--primary);box-shadow:0 0 0 4px rgba(51,88,204,.15)}
+.gantt-dot.set{background:var(--primary);border-color:var(--primary)}
+.gantt-popover{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);border:1px solid var(--border);padding:10px 12px;z-index:20;animation:slideUp 150ms ease;white-space:nowrap}
+.gantt-popover label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px}
+.gantt-popover input[type="date"]{border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-family:inherit;font-size:12px;color:var(--text)}
+.gantt-popover input[type="date"]:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(51,88,204,.15)}
+.gantt-today{position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:1;opacity:.4;pointer-events:none}
+.gantt-today-label{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--red);font-weight:600;white-space:nowrap}
+.gantt-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;padding-top:8px;border-top:1px solid var(--border)}
+.gantt-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
+.gantt-legend-swatch{width:12px;height:12px;border-radius:3px}
+
+/* Command Center — editable spreadsheet */
+.cmd-table{font-size:12px;table-layout:auto}
+.cmd-table th{position:sticky;top:0;z-index:2;white-space:nowrap;padding:8px 6px;font-size:10px}
+.cmd-table td{padding:3px 4px;vertical-align:middle}
+.cmd-table select,.cmd-table input[type="date"]{font-size:11px;padding:3px 5px;border:1px solid transparent;border-radius:4px;background:transparent;font-family:inherit;width:100%;color:var(--text)}
+.cmd-table select:hover,.cmd-table input[type="date"]:hover{border-color:var(--border)}
+.cmd-table select:focus,.cmd-table input[type="date"]:focus{border-color:var(--primary);outline:none;background:var(--surface);box-shadow:0 0 0 2px rgba(51,88,204,.15)}
+.cmd-table input[type="checkbox"]{width:15px;height:15px;accent-color:var(--primary);cursor:pointer}
+.cmd-table input[type="text"]{font-size:11px;padding:3px 5px;border:1px solid transparent;border-radius:4px;background:transparent;font-family:inherit;width:100%;min-width:140px;color:var(--text)}
+.cmd-table input[type="text"]:hover{border-color:var(--border)}
+.cmd-table input[type="text"]:focus{border-color:var(--primary);outline:none;background:var(--surface);box-shadow:0 0 0 2px rgba(51,88,204,.15)}
+.cmd-table tbody tr:hover td{background:rgba(51,88,204,.04)}
+.cmd-save-bar{position:sticky;bottom:0;padding:12px 20px;background:var(--surface);border-top:2px solid var(--primary);display:flex;align-items:center;gap:12px;box-shadow:0 -4px 12px rgba(0,0,0,.08);z-index:5}
+
+/* Lifecycle View */
+.lc-row{display:flex;align-items:center;margin-bottom:6px;min-height:38px}
+.lc-label{width:180px;flex-shrink:0;font-size:11px;font-weight:500;padding-right:12px;text-align:right;cursor:pointer;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color var(--transition)}
+.lc-row:hover .lc-label{color:var(--primary)}
+.lc-stages{display:flex;align-items:center;gap:0;flex:1}
+.lc-block{display:flex;align-items:center;justify-content:center;height:28px;flex:1;font-size:10px;font-weight:600;border-radius:4px;margin:0 1px;transition:all var(--transition);position:relative}
+.lc-block.complete{color:rgba(0,0,0,.7)}
+.lc-block.current{outline:2px solid var(--primary);outline-offset:-1px;color:var(--text);font-weight:700}
+.lc-block.future{background:var(--bg3);color:var(--muted)}
+.lc-block .lc-days{position:absolute;bottom:-13px;font-size:8px;color:var(--muted);font-weight:400}
+.lc-conn{width:6px;height:3px;background:var(--border);flex-shrink:0;border-radius:2px}
+.lc-conn.complete{background:var(--green)}
+.lc-hdr{display:flex;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.lc-hdr-label{width:180px;flex-shrink:0}
+.lc-hdr-stages{display:flex;flex:1;gap:0}
+.lc-hdr-stages span{flex:1;text-align:center;font-size:9px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin:0 1px}
+
+/* Budget Table — HTML */
+.budget-table{font-size:12px}
+.budget-table th{font-size:9px;padding:8px 6px;white-space:nowrap}
+.budget-table td{padding:6px 8px;font-size:11px}
+.budget-table .bv-badge{display:inline-block;padding:2px 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:600;white-space:nowrap}
+.budget-table .bv-late{background:var(--red-bg);color:var(--red)}
+.budget-table .bv-early{background:var(--green-bg);color:var(--green)}
+.budget-table .bv-ontime{background:var(--bg2);color:var(--text2)}
+.budget-table .bv-pending{color:var(--muted);font-style:italic}
+.budget-table .company-link{cursor:pointer;color:var(--primary);font-weight:600}
+.budget-table .company-link:hover{text-decoration:underline}
+.budget-table tbody tr:nth-child(even){background:var(--bg2)}
+.budget-table tbody tr:hover{background:color-mix(in srgb, var(--primary) 6%, transparent)}
+.budget-table thead th{background:var(--surface);border-bottom:1px solid var(--border)}
+.budget-table .bv-shaded{background:rgba(99,102,241,.04)}
+.budget-table tbody tr:nth-child(even) .bv-shaded{background:rgba(99,102,241,.07)}
+.budget-table thead th[colspan]{border-left:2px solid var(--border)}
+.budget-table thead th[colspan]:first-of-type{border-left:none}
+.budget-summary{display:flex;gap:16px;padding:16px 20px;border-top:2px solid var(--border);background:var(--bg2)}
+.budget-summary .bs-item{font-size:11px;color:var(--text2)}
+.budget-summary .bs-item strong{color:var(--text);font-size:13px}
+
+/* Form controls */
+.edit-input{border:1px solid transparent;background:transparent;padding:6px 10px;font-size:12px;border-radius:var(--radius-sm);width:100%;font-family:inherit;color:var(--text);transition:border-color var(--transition),box-shadow var(--transition)}
+.edit-input:hover{border-color:var(--border)}
+.edit-input:focus{border-color:var(--primary);background:var(--surface);outline:none;box-shadow:0 0 0 3px rgba(51,88,204,.15)}
+.edit-select{border:1px solid var(--border);background:var(--surface);padding:6px 10px;font-size:12px;border-radius:var(--radius-sm);width:100%;font-family:inherit;color:var(--text);cursor:pointer;transition:border-color var(--transition)}
+.edit-select:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(51,88,204,.15)}
+.edit-cb{width:16px;height:16px;cursor:pointer;accent-color:var(--primary)}
+.edit-textarea{border:1px solid var(--border);background:var(--surface);padding:8px 10px;font-size:12px;border-radius:var(--radius-sm);width:100%;font-family:inherit;color:var(--text);resize:vertical;min-height:60px;transition:border-color var(--transition),box-shadow var(--transition)}
+.edit-textarea:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(51,88,204,.15)}
+.save-bar{position:sticky;bottom:0;background:var(--surface);padding:14px 24px;border-top:2px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.save-bar.hidden{display:none}
+
+/* Buttons */
+.btn{border:none;padding:9px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all var(--transition)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark);box-shadow:var(--shadow-md)}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.btn-icon{background:none;border:1px solid rgba(255,255,255,.25);border-radius:var(--radius-sm);padding:5px 12px;font-size:16px;cursor:pointer;color:#fff;line-height:1;transition:background var(--transition)}
+.btn-icon:hover{background:rgba(255,255,255,.1)}
+.dirty-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;margin-left:6px}
+.cb-row{display:flex;align-items:center;gap:8px}
+
+/* Focus states */
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+@media(max-width:700px){
+  .chart-row{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+}
+@media print{
+  .tabs,.hdr-meta,.footer{display:none}
+  .card{break-inside:avoid}
+  body{font-size:11px}
+  .panel{display:block !important}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="logo">HOAi Voice Implementation Console<span id="dirtyDot" class="dirty-dot" style="display:none" title="Unsaved changes"></span></div>
+  <div class="hdr-right">
+    <button class="btn-icon" id="addCustomerBtn" onclick="addCustomer()" title="Add Customer">+</button>
+    <button class="btn btn-outline" style="font-size:10px;padding:4px 10px" onclick="exportData()" title="Export data.json">Export</button>
+    <button class="btn btn-outline" style="font-size:10px;padding:4px 10px" onclick="importData()" title="Import data.json">Import</button>
+    <button class="btn btn-outline" style="font-size:10px;padding:4px 10px;color:var(--muted)" onclick="resetToServerData()" title="Discard local edits">Reset</button>
+    <button class="btn btn-outline" id="loadDataBtn" onclick="loadDataFromPicker()" style="display:none">Load Data</button>
+    <div class="hdr-meta" id="headerMeta">Loading...</div>
+  </div>
+</div>
+
+<div class="tabs" id="tabBar">
+  <div class="tab active" data-tab="overview">Overview</div>
+  <div class="tab" data-tab="command">Command Center</div>
+  <div class="tab" data-tab="lifecycle">Lifecycle</div>
+  <div class="tab" data-tab="kanban">Kanban Board</div>
+  <div class="tab" data-tab="pipeline">Pipeline Gantt</div>
+  <div class="tab" data-tab="budget">Budget vs. Actual</div>
+  <div class="tab" data-tab="kpis">KPIs</div>
+</div>
+
+<div class="filter-bar" id="filterBar" style="display:none">
+  <span class="filter-label">Cohort</span>
+  <div class="filter-pills" id="cohortPills"></div>
+</div>
+<div class="filter-bar" id="voiceFdeFilterBar" style="display:none">
+  <span class="filter-label">Voice FDE</span>
+  <div class="filter-pills" id="voiceFdePills"></div>
+</div>
+<div class="filter-bar" id="fdeFilterBar" style="display:none">
+  <span class="filter-label">Base FDE</span>
+  <div class="filter-pills" id="fdePills"></div>
+</div>
+
+<div class="content">
+  <div class="panel active" id="panel-overview">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="chart-row">
+      <div class="chart-box"><div class="chart-title">Stage Distribution</div><canvas id="chartStage"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Health Breakdown</div><canvas id="chartHealth"></canvas></div>
+      <div class="chart-box"><div class="chart-title">FDE Workload</div><canvas id="chartFDE"></canvas></div>
+    </div>
+    <div class="sec"><div class="sec-ttl">Needs Attention</div></div>
+    <div class="card" id="attentionCard"><table id="attentionTable"></table></div>
+  </div>
+
+  <div class="panel" id="panel-command">
+    <div class="sec"><div class="sec-ttl">Command Center</div></div>
+    <div class="card" style="overflow-x:auto;max-height:calc(100vh - 200px);overflow-y:auto">
+      <table id="cmdTable" class="cmd-table"></table>
+    </div>
+    <div class="cmd-save-bar" id="cmdSaveBar" style="display:none">
+      <span id="cmdSaveStatus" style="font-size:11px;color:var(--muted);flex:1"></span>
+      <button class="btn btn-primary" onclick="cmdCenterSaveAll()">Save Now</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-lifecycle">
+    <div class="sec"><div class="sec-ttl">Customer Implementation Lifecycle</div></div>
+    <div class="card" style="overflow-x:auto;padding:16px 20px">
+      <div id="lifecycleView"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-kanban">
+    <div class="sec"><div class="sec-ttl">Kanban Board — Customers by Stage</div></div>
+    <div class="kanban-board" id="kanbanBoard"></div>
+  </div>
+
+  <div class="panel" id="panel-pipeline">
+    <div class="sec"><div class="sec-ttl">Pipeline Gantt — Actual Progress by Customer</div></div>
+    <div class="chart-box" style="padding:16px"><div id="htmlGantt" class="html-gantt"></div></div>
+  </div>
+
+  <div class="panel" id="panel-budget">
+    <div class="sec"><div class="sec-ttl">Budget vs. Actual</div></div>
+    <div class="card" style="overflow-x:auto">
+      <table id="budgetTable" class="budget-table"></table>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-kpis">
+    <div class="sec"><div class="sec-ttl">KPI Dashboard</div></div>
+    <div class="card"><table id="kpiTable"></table></div>
+  </div>
+
+</div>
+
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-panel">
+    <div class="detail-hdr"><h2 id="detailTitle"></h2><button class="detail-close" onclick="closeDetail()">x</button></div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+</div>
+
+<div class="detail-overlay" id="addOverlay">
+  <div class="detail-panel" style="max-width:600px">
+    <div class="detail-hdr"><h2>Add New Customer</h2><button class="detail-close" onclick="closeAddModal()">&times;</button></div>
+    <div class="detail-body add-form">
+      <div class="form-grid">
+        <div class="form-field"><label>Company Name *</label><input id="addName" type="text" placeholder="e.g. Acme Management"></div>
+        <div class="form-field"><label>Cohort</label><input id="addCohort" type="month"></div>
+        <div class="form-field"><label>Base FDE</label><select id="addBaseFde"></select></div>
+        <div class="form-field"><label>Voice FDE</label><select id="addVoiceFde"></select></div>
+        <div class="form-field"><label>Priority</label><select id="addPriority"></select></div>
+        <div class="form-field"><label>Welcome Package Date</label><input id="addWelcome" type="date"></div>
+      </div>
+      <div class="form-field" style="margin-bottom:0"><label>Notes</label><textarea id="addNotes" placeholder="Implementation notes..."></textarea></div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeAddModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitAddCustomer()">Add Customer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer" id="footer"></div>
+
+<script>
+// -- Constants ---------------------------------------------------------------
+const FDE_LIST = ['','Breanna','Cassie','Christopher','Connor','Corbin','Daniel','Dylan','Gabby','Isabella','Itziar','Joe','Jonath','Kaitlin','Kris','MacKenzie','Nealey','Tanner','Will'];
+const PRIORITY_LIST = ['','P1','P2','P3','P4'];
+const DELAY_REASONS = ['','Waiting on client','Scheduling conflict','Internal delay','Technical issue','Questionnaire incomplete','AOP revisions','Other'];
+
+const STAGES = [
+  'Welcome Package','Questionnaire','AOP Configuration','Alignment Call',
+  'HOAi Testing','Customer Testing','Live Testing','Activation'
+];
+const STAGE_SHORT = ['WP','QST','AOP','AC','HT','CT','LT','ACT'];
+const STAGE_COLORS = ['#90CAF9','#CE93D8','#80CBC4','#FFE082','#A5D6A7','#EF9A9A','#FFAB91','#2E7D32'];
+const STAGE_COLORS_FADED = ['rgba(144,202,249,.3)','rgba(206,147,216,.3)','rgba(128,203,196,.3)','rgba(255,224,130,.3)','rgba(165,214,167,.3)','rgba(239,154,154,.3)','rgba(255,171,145,.3)','rgba(46,125,50,.3)'];
+
+const MILESTONE_MAP = {
+  'Welcome Package':    { planned: 'planned_welcome_package',   actual: 'welcome_package_date' },
+  'Questionnaire':      { planned: 'planned_questionnaire',     actual: null },
+  'AOP Configuration':  { planned: 'planned_aop',               actual: null },
+  'Alignment Call':     { planned: 'planned_alignment_call',    actual: 'alignment_call_date' },
+  'HOAi Testing':       { planned: 'planned_hoai_testing',      actual: 'hoai_testing_date' },
+  'Customer Testing':   { planned: 'planned_customer_testing',  actual: 'customer_testing_date' },
+  'Live Testing':       { planned: 'planned_live_testing',      actual: 'live_testing_date' },
+  'Activation':         { planned: 'planned_activation',        actual: 'activation_date' },
+};
+
+let CONSOLE_DATA = {};
+let customers = [];
+let charts = {};
+let isDirty = false;
+let currentDetailId = null;
+let dataFileHandle = null;
+let activeCohort = 'All';
+let activeFDE = 'All';
+let activeVoiceFDE = 'All';
+let autoSaveTimer = null;
+const LS_KEY = 'impl-console-data';
+
+function saveToLocalStorage() {
+  CONSOLE_DATA.customers = customers.map(c => c.raw);
+  CONSOLE_DATA.generated_at = new Date().toISOString();
+  CONSOLE_DATA.customer_count = customers.length;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(CONSOLE_DATA)); } catch (e) { console.warn('localStorage save failed:', e); }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+// -- Client-side recompute (ports of Python logic) ---------------------------
+function recomputeStage(c) {
+  const today = new Date().toISOString().slice(0,10);
+  if (c.live_testing_complete) return 'Activation';
+  if (c.customer_testing_complete) return 'Live Testing';
+  if (c.hoai_testing_complete) return 'Customer Testing';
+  if (c.alignment_call_date && c.alignment_call_date <= today) return 'HOAi Testing';
+  if (c.alignment_call_date && c.alignment_call_date > today) return 'Alignment Call';
+  if (c.aop_config) return 'Alignment Call';
+  if (c.questionnaire_complete) return 'AOP Configuration';
+  if (c.welcome_package_date) return 'Questionnaire';
+  return 'Welcome Package';
+}
+function recomputeStageEntryDate(c, stage) {
+  const map = {
+    'Welcome Package': c.welcome_package_date,
+    'Questionnaire': c.welcome_package_date,
+    'AOP Configuration': c.welcome_package_date,
+    'Alignment Call': c.alignment_call_date || c.welcome_package_date,
+    'HOAi Testing': c.hoai_testing_date || c.alignment_call_date,
+    'Customer Testing': c.customer_testing_date || c.hoai_testing_date,
+    'Live Testing': c.live_testing_date || c.customer_testing_date,
+    'Activation': c.activation_date || c.live_testing_date,
+  };
+  return map[stage] || null;
+}
+function recomputeDaysInStage(entryDate) {
+  if (!entryDate) return 0;
+  const entry = new Date(entryDate + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.max(0, Math.round((today - entry) / 86400000));
+}
+function recomputeHealth(days, stage) {
+  if (stage === 'Activation') return 'Green';
+  if (days > 7) return 'Red';
+  if (days > 5) return 'Amber';
+  return 'Green';
+}
+function recomputeStatus(c, health) {
+  const stage = c.computed_stage || 'Welcome Package';
+  if (stage === 'Activation') return 'Complete';
+  if (health === 'Red') return 'Stalled';
+  if (c.welcome_package_date || c.questionnaire_complete || c.aop_config) return 'In Progress';
+  return 'Not Started';
+}
+function recomputeNextAction(c, stage) {
+  const name = c.company_name;
+  if (stage === 'Welcome Package' && !c.welcome_package_date) return 'Set Welcome Package date for ' + name;
+  if (stage === 'Welcome Package' && !c.questionnaire_complete) return 'Waiting on questionnaire -- follow up with ' + name;
+  if (stage === 'Questionnaire' && !c.aop_config) return '/generate-aop ' + name;
+  if (stage === 'AOP Configuration' && !c.alignment_call_date) return 'Schedule alignment call for ' + name;
+  if (stage === 'Alignment Call' && !c.hoai_testing_date) return 'Set HOAi Internal Testing date for ' + name;
+  if (stage === 'HOAi Testing' && !c.hoai_testing_complete) return 'Waiting on HOAi testing -- /analyze-calls ' + name;
+  if (stage === 'Customer Testing' && !c.customer_testing_complete) return 'Waiting on customer testing -- /analyze-calls ' + name;
+  if (stage === 'Live Testing' && !c.live_testing_complete) return 'Waiting on live testing -- /analyze-calls ' + name;
+  if (stage === 'Activation') return 'Go-live complete';
+  return '';
+}
+function recomputeAll(raw) {
+  raw.computed_stage = recomputeStage(raw);
+  const entry = recomputeStageEntryDate(raw, raw.computed_stage);
+  raw.computed_days_in_stage = recomputeDaysInStage(entry);
+  raw.computed_health = recomputeHealth(raw.computed_days_in_stage, raw.computed_stage);
+  raw.computed_status = recomputeStatus(raw, raw.computed_health);
+  raw.computed_next_action = recomputeNextAction(raw, raw.computed_stage);
+}
+
+// -- Data loading (fetch or file picker) -------------------------------------
+async function bootData() {
+  let fileData = null;
+  try {
+    const resp = await fetch('./data.json');
+    if (resp.ok) fileData = await resp.json();
+  } catch {}
+
+  const lsData = loadFromLocalStorage();
+
+  if (lsData && fileData) {
+    const lsDate = lsData.generated_at ? new Date(lsData.generated_at) : new Date(0);
+    const fileDate = fileData.generated_at ? new Date(fileData.generated_at) : new Date(0);
+    CONSOLE_DATA = lsDate >= fileDate ? lsData : fileData;
+  } else if (lsData) {
+    CONSOLE_DATA = lsData;
+  } else if (fileData) {
+    CONSOLE_DATA = fileData;
+  } else {
+    document.getElementById('headerMeta').textContent = 'Click "Load Data" to open data.json';
+    document.getElementById('loadDataBtn').style.display = 'inline-block';
+    return;
+  }
+  initDashboard();
+}
+async function loadDataFromPicker() {
+  try {
+    const [handle] = await window.showOpenFilePicker({ types: [{ accept: { 'application/json': ['.json'] } }] });
+    dataFileHandle = handle;
+    const file = await handle.getFile();
+    CONSOLE_DATA = JSON.parse(await file.text());
+    document.getElementById('loadDataBtn').style.display = 'none';
+    initDashboard();
+  } catch (e) { if (e.name !== 'AbortError') console.error(e); }
+}
+
+function initDashboard() {
+  if (!CONSOLE_DATA.customers || CONSOLE_DATA.customers.length === 0) {
+    document.getElementById('headerMeta').textContent = 'No customers in data';
+    return;
+  }
+  customers = CONSOLE_DATA.customers.map(c => buildCustomerView(c));
+  const genDate = CONSOLE_DATA.generated_at ? new Date(CONSOLE_DATA.generated_at) : null;
+  const dateStr = genDate ? genDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : CONSOLE_DATA.date || '';
+  const timeStr = genDate ? genDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  let metaText = `${customers.length} customers | ${dateStr} ${timeStr}`;
+  if (CONSOLE_DATA.last_trigger_run) {
+    const tr = new Date(CONSOLE_DATA.last_trigger_run);
+    const trStr = tr.toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const fired = CONSOLE_DATA.trigger_summary ? ` (${CONSOLE_DATA.trigger_summary.fired} fired)` : '';
+    metaText += ` | Triggers: ${trStr}${fired}`;
+  }
+  document.getElementById('headerMeta').textContent = metaText;
+  document.getElementById('footer').textContent = `Generated ${dateStr} ${timeStr} | Internal Use Only`;
+  renderAll();
+  buildCohortFilter();
+  buildVoiceFDEFilter();
+  buildFDEFilter();
+}
+
+function buildCohortFilter() {
+  const cohorts = [...new Set(customers.map(c => c.cohort).filter(Boolean))].sort();
+  if (cohorts.length === 0) return;
+  const bar = document.getElementById('filterBar');
+  bar.style.display = 'flex';
+  const container = document.getElementById('cohortPills');
+  const allPills = ['All', ...cohorts];
+  if (customers.some(c => !c.cohort)) allPills.push('Unassigned');
+  container.innerHTML = allPills.map(label =>
+    `<button class="filter-pill${label === activeCohort ? ' active' : ''}" data-cohort="${escHtml(label)}">${escHtml(label)}</button>`
+  ).join('');
+  container.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeCohort = btn.dataset.cohort;
+      container.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    });
+  });
+}
+
+function buildVoiceFDEFilter() {
+  const vfdes = [...new Set(customers.map(c => c.voiceFde).filter(Boolean))].sort();
+  if (vfdes.length === 0) return;
+  const bar = document.getElementById('voiceFdeFilterBar');
+  bar.style.display = 'flex';
+  const container = document.getElementById('voiceFdePills');
+  const allPills = ['All', ...vfdes];
+  container.innerHTML = allPills.map(label =>
+    `<button class="filter-pill${label === activeVoiceFDE ? ' active' : ''}" data-vfde="${escHtml(label)}">${escHtml(label)}</button>`
+  ).join('');
+  container.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeVoiceFDE = btn.dataset.vfde;
+      container.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    });
+  });
+}
+
+function buildFDEFilter() {
+  const fdes = FDE_LIST.filter(Boolean);
+  const bar = document.getElementById('fdeFilterBar');
+  bar.style.display = 'flex';
+  const container = document.getElementById('fdePills');
+  const allPills = ['All', ...fdes];
+  container.innerHTML = allPills.map(label =>
+    `<button class="filter-pill${label === activeFDE ? ' active' : ''}" data-fde="${escHtml(label)}">${escHtml(label)}</button>`
+  ).join('');
+  container.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeFDE = btn.dataset.fde;
+      container.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    });
+  });
+}
+
+function buildCustomerView(c) {
+  const cu = {
+    id: c.notion_url || c.page_id || c.company_name,
+    name: c.company_name,
+    stage: c.computed_stage || c.current_stage || '',
+    status: c.computed_status || c.status || '',
+    health: c.computed_health || c.health || '',
+    fde: c.base_fde || c.fde || '',
+    voiceFde: c.voice_fde || '',
+    priority: c.priority || '',
+    daysInStage: c.computed_days_in_stage || 0,
+    csat: c.csat,
+    calls30d: c.calls_30d || 0,
+    deflection: c.deflection_rate || '',
+    delayReason: c.delay_reason || '',
+    notes: c.implementation_notes || '',
+    nextAction: c.computed_next_action || c.next_action || '',
+    cohort: c.cohort || '',
+    mainOverflow: c.main_overflow || '',
+    callsEnabled: c.calls_enabled || false,
+    smsEnabled: c.sms_enabled || false,
+    webchatEnabled: c.webchat_enabled || false,
+    dates: {},
+    raw: c,
+  };
+  STAGES.forEach(ms => {
+    const map = MILESTONE_MAP[ms];
+    if (!map) return;
+    cu.dates[ms] = {
+      planned: map.planned ? c[map.planned] : null,
+      actual: map.actual ? c[map.actual] : null,
+    };
+  });
+  return cu;
+}
+
+// -- Tab switching -----------------------------------------------------------
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+}));
+
+// -- Ctrl+S save shortcut ---------------------------------------------------
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    if (isDirty) cmdCenterSaveAll();
+  }
+});
+
+// -- Helpers -----------------------------------------------------------------
+function healthBadge(h) {
+  if (!h) return '<span class="badge b-gray">-</span>';
+  const cls = h === 'Green' ? 'b-green' : h === 'Amber' ? 'b-amber' : 'b-red';
+  return `<span class="badge ${cls}">${h}</span>`;
+}
+function statusBadge(s) {
+  if (!s) return '';
+  const cls = s === 'Complete' ? 'b-green' : s === 'In Progress' ? 'b-blue' : s === 'Blocked' ? 'b-red' : s === 'Stalled' ? 'b-amber' : 'b-gray';
+  return `<span class="badge ${cls}">${s}</span>`;
+}
+function stageBadge(s) {
+  if (!s) return '';
+  const idx = STAGES.indexOf(s);
+  const bg = idx >= 0 ? STAGE_COLORS_FADED[idx] : 'var(--bg2)';
+  return `<span class="badge" style="background:${bg};color:var(--text)">${STAGE_SHORT[idx >= 0 ? idx : 0]}</span>`;
+}
+function fmtDate(d) {
+  if (!d) return '-';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toDate(d) { return d ? new Date(d + 'T00:00:00') : null; }
+
+function getFilteredCustomers() {
+  let result = customers;
+  if (activeCohort !== 'All') {
+    result = activeCohort === 'Unassigned' ? result.filter(c => !c.cohort) : result.filter(c => c.cohort === activeCohort);
+  }
+  if (activeVoiceFDE !== 'All') {
+    result = result.filter(c => c.voiceFde === activeVoiceFDE);
+  }
+  if (activeFDE !== 'All') {
+    result = result.filter(c => c.fde === activeFDE);
+  }
+  return result;
+}
+
+// -- Render all tabs ---------------------------------------------------------
+function renderAll() {
+  renderKPIs();
+  renderOverviewCharts();
+  renderAttention();
+  renderKanban();
+  renderHTMLGantt();
+  renderLifecycle();
+  renderBudgetTimeline();
+  renderKPITable();
+  renderCommandCenter();
+}
+
+function renderKPIs() {
+  const filtered = getFilteredCustomers();
+  const total = filtered.length;
+  const active = filtered.filter(c => c.status === 'In Progress').length;
+  const blocked = filtered.filter(c => c.status === 'Blocked' || c.status === 'Stalled').length;
+  const complete = filtered.filter(c => c.status === 'Complete').length;
+  const avgDays = total ? Math.round(filtered.reduce((s, c) => s + (c.daysInStage || 0), 0) / total) : 0;
+  const atRisk = filtered.filter(c => c.health === 'Red' || c.health === 'Amber').length;
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi hero"><div class="kpi-lbl">Total Customers</div><div class="kpi-val">${total}</div></div>
+    <div class="kpi"><div class="kpi-lbl">In Progress</div><div class="kpi-val">${active}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Blocked / Stalled</div><div class="kpi-val" style="color:${blocked ? 'var(--red)' : 'var(--text)'}">${blocked}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Complete</div><div class="kpi-val" style="color:var(--green)">${complete}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Avg Days in Stage</div><div class="kpi-val">${avgDays}</div></div>
+    <div class="kpi"><div class="kpi-lbl">At Risk</div><div class="kpi-val" style="color:${atRisk ? 'var(--amber)' : 'var(--text)'}">${atRisk}</div></div>
+  `;
+}
+
+function renderOverviewCharts() {
+  const filtered = getFilteredCustomers();
+  const stageCounts = {};
+  STAGES.forEach(m => stageCounts[m] = 0);
+  filtered.forEach(c => { if (stageCounts[c.stage] !== undefined) stageCounts[c.stage]++; });
+  if (charts.stage) charts.stage.destroy();
+  charts.stage = new Chart(document.getElementById('chartStage'), {
+    type: 'bar',
+    data: { labels: STAGE_SHORT, datasets: [{ data: STAGES.map(m => stageCounts[m]), backgroundColor: '#ecf1ff', borderColor: '#3358cc', borderWidth: 1, borderRadius: 4 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+
+  const hc = { Green: 0, Amber: 0, Red: 0 };
+  filtered.forEach(c => { if (hc[c.health] !== undefined) hc[c.health]++; });
+  if (charts.health) charts.health.destroy();
+  charts.health = new Chart(document.getElementById('chartHealth'), {
+    type: 'doughnut',
+    data: { labels: ['Green', 'Amber', 'Red'], datasets: [{ data: [hc.Green, hc.Amber, hc.Red], backgroundColor: ['#007b22', '#cd6900', '#d60000'] }] },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } }
+  });
+
+  const fdeMap = {};
+  filtered.forEach(c => { const f = c.fde || 'Unassigned'; fdeMap[f] = (fdeMap[f] || 0) + 1; });
+  const fdeLabels = Object.keys(fdeMap).sort();
+  if (charts.fde) charts.fde.destroy();
+  charts.fde = new Chart(document.getElementById('chartFDE'), {
+    type: 'bar',
+    data: { labels: fdeLabels, datasets: [{ data: fdeLabels.map(f => fdeMap[f]), backgroundColor: '#3358cc', borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+}
+
+function renderAttention() {
+  const atRisk = getFilteredCustomers().filter(c => c.health === 'Red' || c.health === 'Amber' || c.status === 'Blocked' || c.status === 'Stalled');
+  const tbl = document.getElementById('attentionTable');
+  tbl.innerHTML = `<thead><tr><th>Company</th><th>Stage</th><th>Status</th><th>Health</th><th>Base FDE</th><th>Voice FDE</th><th>Days</th><th>Delay Reason</th><th>Next Action</th></tr></thead><tbody>${
+    atRisk.length ? atRisk.map(c => `<tr style="cursor:pointer" onclick="showDetail('${escHtml(c.id)}')">
+      <td><strong>${escHtml(c.name)}</strong></td><td>${escHtml(c.stage)}</td><td>${statusBadge(c.status)}</td><td>${healthBadge(c.health)}</td>
+      <td>${escHtml(c.fde)}</td><td>${escHtml(c.voiceFde)}</td><td class="num">${c.daysInStage}</td><td>${escHtml(c.delayReason) || '-'}</td><td>${escHtml(c.nextAction) || '-'}</td>
+    </tr>`).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">All clear - no customers need attention</td></tr>'
+  }</tbody>`;
+}
+
+// -- Kanban Board ------------------------------------------------------------
+function renderKanban() {
+  const filtered = getFilteredCustomers();
+  const board = document.getElementById('kanbanBoard');
+  const buckets = STAGES.map(() => []);
+  filtered.forEach(c => {
+    const idx = STAGES.indexOf(c.stage);
+    buckets[idx >= 0 ? idx : 0].push(c);
+  });
+
+  board.innerHTML = STAGES.map((stage, si) => {
+    const cards = buckets[si].map(c => {
+      const hClass = (c.health || '').toLowerCase();
+      return `<div class="kanban-card" draggable="true" data-id="${escHtml(c.id)}" style="border-left-color:${STAGE_COLORS[si]}" onclick="showDetail('${escHtml(c.id)}')" ondragstart="kanbanDragStart(event,'${escHtml(c.id)}')">
+        <div class="kanban-card-name">${escHtml(c.name)}</div>
+        <div class="kanban-card-meta">
+          <span class="health-dot ${hClass}" title="${c.health || 'Unknown'}"></span>
+          ${c.fde ? '<span>B:' + escHtml(c.fde) + '</span>' : ''}
+          ${c.voiceFde ? '<span>V:' + escHtml(c.voiceFde) + '</span>' : ''}
+          <span>${c.daysInStage}d</span>
+          ${c.priority ? '<span class="badge b-gray" style="padding:1px 6px;font-size:9px">' + escHtml(c.priority) + '</span>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="kanban-col" data-stage="${si}" ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event,${si})">
+      <div class="kanban-col-hdr" style="background:${STAGE_COLORS_FADED[si]}">
+        <span>${STAGE_SHORT[si]}</span><span class="kanban-col-count">${buckets[si].length}</span>
+      </div>
+      ${cards || '<div style="text-align:center;color:var(--muted);font-size:11px;padding:12px">—</div>'}
+    </div>`;
+  }).join('');
+}
+
+let kanbanDragId = null;
+function kanbanDragStart(e, id) {
+  kanbanDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.target.classList.add('dragging');
+  setTimeout(() => { if (e.target) e.target.classList.remove('dragging'); }, 200);
+}
+function kanbanDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function kanbanDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function kanbanDrop(e, newStageIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!kanbanDragId) return;
+  const c = customers.find(x => x.id === kanbanDragId);
+  if (!c) return;
+  const r = c.raw;
+  const today = new Date().toISOString().slice(0,10);
+  const newStage = STAGES[newStageIdx];
+
+  // Set appropriate field based on target stage
+  if (newStage === 'Questionnaire' && !r.welcome_package_date) r.welcome_package_date = today;
+  if (newStage === 'AOP Configuration') r.questionnaire_complete = true;
+  if (newStage === 'Alignment Call') r.aop_config = true;
+  if (newStage === 'HOAi Testing' && !r.alignment_call_date) r.alignment_call_date = today;
+  if (newStage === 'Customer Testing') r.hoai_testing_complete = true;
+  if (newStage === 'Live Testing') r.customer_testing_complete = true;
+  if (newStage === 'Activation') r.live_testing_complete = true;
+
+  recomputeAll(r);
+  syncCustomerFromRaw(c);
+  markDirty();
+  renderAll();
+  kanbanDragId = null;
+}
+
+// -- HTML Gantt Pipeline ----------------------------------------------------
+function renderHTMLGantt() {
+  const sorted = [...getFilteredCustomers()].sort((a, b) => {
+    const aFirst = getFirstActualDate(a);
+    const bFirst = getFirstActualDate(b);
+    if (!aFirst && !bFirst) return 0;
+    if (!aFirst) return 1;
+    if (!bFirst) return -1;
+    return aFirst - bFirst;
+  });
+
+  const container = document.getElementById('htmlGantt');
+  if (sorted.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">No customers to display</div>';
+    return;
+  }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  // Compute date range
+  let minDate = new Date(today), maxDate = new Date(today);
+  sorted.forEach(c => {
+    STAGES.forEach(stage => {
+      const map = MILESTONE_MAP[stage];
+      if (map.actual && c.raw[map.actual]) {
+        const d = toDate(c.raw[map.actual]);
+        if (d < minDate) minDate = new Date(d);
+        if (d > maxDate) maxDate = new Date(d);
+      }
+      if (map.planned && c.raw[map.planned]) {
+        const d = toDate(c.raw[map.planned]);
+        if (d > maxDate) maxDate = new Date(d);
+      }
+    });
+  });
+  minDate.setDate(minDate.getDate() - 7);
+  maxDate.setDate(maxDate.getDate() + 14);
+  const range = maxDate.getTime() - minDate.getTime();
+  if (range <= 0) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">No date data</div>'; return; }
+
+  function pct(d) { return ((d.getTime() - minDate.getTime()) / range) * 100; }
+
+  // Time header — week marks
+  let timeHdr = '<div class="gantt-time-hdr">';
+  const weekMs = 7 * 86400000;
+  let mark = new Date(minDate);
+  mark.setDate(mark.getDate() - mark.getDay()); // align to Sunday
+  while (mark <= maxDate) {
+    const left = pct(mark);
+    if (left >= 0 && left <= 100) {
+      const label = mark.toLocaleDateString('en-US', {month:'short',day:'numeric'});
+      timeHdr += `<span class="gantt-time-mark" style="left:${left}%">${label}</span>`;
+    }
+    mark = new Date(mark.getTime() + weekMs);
+  }
+  timeHdr += '</div>';
+
+  // Rows
+  let rows = '';
+  sorted.forEach(c => {
+    let segments = '';
+    const currentStageIdx = STAGES.indexOf(c.stage);
+
+    STAGES.forEach((stage, si) => {
+      const seg = getStageSegment(c, stage, si, today);
+      if (!seg) return;
+      const left = pct(new Date(seg[0]));
+      const right = pct(new Date(seg[1]));
+      const width = right - left;
+      if (width < 0.2) return;
+      const label = width > 4 ? STAGE_SHORT[si] : '';
+      segments += `<div class="gantt-seg" style="left:${left}%;width:${width}%;background:${STAGE_COLORS[si]}" title="${stage}: ${new Date(seg[0]).toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${new Date(seg[1]).toLocaleDateString('en-US',{month:'short',day:'numeric'})}"><span class="seg-label">${label}</span></div>`;
+    });
+
+    // Milestone dots at actual dates
+    let dots = '';
+    STAGES.forEach((stage, si) => {
+      const map = MILESTONE_MAP[stage];
+      const field = map.actual;
+      if (!field) return;
+      const val = c.raw[field];
+      const d = val ? toDate(val) : null;
+      if (d) {
+        const left = pct(d);
+        dots += `<div class="gantt-dot set" style="left:${left}%" title="${stage}: ${fmtDate(val)}" onclick="event.stopPropagation();showGanttDatePicker('${escHtml(c.id)}','${field}',this,'${stage}')"></div>`;
+      } else if (si <= currentStageIdx + 1) {
+        // Show empty dot for next expected milestone
+        const prevField = si > 0 ? MILESTONE_MAP[STAGES[si-1]].actual : null;
+        const prevDate = prevField ? c.raw[prevField] : null;
+        if (prevDate || si === 0) {
+          const anchorDate = prevDate ? toDate(prevDate) : today;
+          const left = pct(anchorDate);
+          dots += `<div class="gantt-dot" style="left:${Math.min(left + 1, 99)}%" title="Set ${stage} date" onclick="event.stopPropagation();showGanttDatePicker('${escHtml(c.id)}','${field}',this,'${stage}')"></div>`;
+        }
+      }
+    });
+
+    // Today line position (per row)
+    const todayLeft = pct(today);
+
+    rows += `<div class="gantt-row">
+      <div class="gantt-label" onclick="showDetail('${escHtml(c.id)}')" title="${escHtml(c.name)}">${escHtml(c.name)}</div>
+      <div class="gantt-track">${segments}${dots}</div>
+    </div>`;
+  });
+
+  // Global today line
+  const todayLeft = pct(today);
+  const todayLine = `<div class="gantt-today" style="left:calc(180px + ${todayLeft}% * (100% - 188px) / 100)"></div>`;
+
+  // Legend
+  const legend = '<div class="gantt-legend">' + STAGES.map((s, i) =>
+    `<div class="gantt-legend-item"><div class="gantt-legend-swatch" style="background:${STAGE_COLORS[i]}"></div>${s}</div>`
+  ).join('') + '</div>';
+
+  container.innerHTML = timeHdr + '<div style="position:relative">' + rows + '</div>' + legend;
+}
+
+let activeGanttPopover = null;
+function showGanttDatePicker(customerId, field, dotEl, stageName) {
+  // Close existing popover
+  if (activeGanttPopover) { activeGanttPopover.remove(); activeGanttPopover = null; }
+
+  const c = customers.find(x => x.id === customerId);
+  if (!c) return;
+
+  const popover = document.createElement('div');
+  popover.className = 'gantt-popover';
+  popover.innerHTML = `<label>${escHtml(stageName)}</label><input type="date" value="${c.raw[field] || ''}">`;
+  dotEl.style.position = 'relative';
+  dotEl.appendChild(popover);
+  activeGanttPopover = popover;
+
+  const input = popover.querySelector('input');
+  input.focus();
+  input.addEventListener('change', () => {
+    c.raw[field] = input.value || null;
+    recomputeAll(c.raw);
+    syncCustomerFromRaw(c);
+    markDirty();
+    renderAll();
+    activeGanttPopover = null;
+  });
+
+  // Close on outside click
+  const close = (e) => {
+    if (!popover.contains(e.target) && e.target !== dotEl) {
+      popover.remove();
+      activeGanttPopover = null;
+      document.removeEventListener('click', close);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', close), 10);
+}
+
+function getFirstActualDate(c) {
+  for (const stage of STAGES) {
+    const d = c.dates[stage] && c.dates[stage].actual;
+    if (d) return toDate(d);
+  }
+  return null;
+}
+
+function getStageSegment(c, stage, stageIdx, today) {
+  const actualKey = MILESTONE_MAP[stage].actual;
+  const thisDate = actualKey ? toDate(c.raw[actualKey]) : null;
+
+  // Find the previous stage's actual date as segment start
+  let prevDate = null;
+  for (let i = stageIdx - 1; i >= 0; i--) {
+    const pk = MILESTONE_MAP[STAGES[i]].actual;
+    if (pk && c.raw[pk]) { prevDate = toDate(c.raw[pk]); break; }
+  }
+
+  if (!thisDate && !prevDate) return null;
+
+  // Current active stage: extend to today
+  const currentStageIdx = STAGES.indexOf(c.stage);
+  if (stageIdx === currentStageIdx && !thisDate && prevDate) {
+    return [prevDate.getTime(), today.getTime()];
+  }
+
+  if (!thisDate) return null;
+  const start = prevDate || thisDate;
+  // Ensure at least 1 day width
+  const end = thisDate.getTime() <= start.getTime() ? new Date(start.getTime() + 86400000) : thisDate;
+  return [start.getTime(), end.getTime()];
+}
+
+// -- Lifecycle View ----------------------------------------------------------
+function renderLifecycle() {
+  const filtered = getFilteredCustomers();
+  const container = document.getElementById('lifecycleView');
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">No customers to display</div>';
+    return;
+  }
+
+  // Sort: furthest along first, then by days-in-stage ascending
+  const sorted = [...filtered].sort((a, b) => {
+    const aIdx = STAGES.indexOf(a.stage);
+    const bIdx = STAGES.indexOf(b.stage);
+    if (bIdx !== aIdx) return bIdx - aIdx;
+    return a.daysInStage - b.daysInStage;
+  });
+
+  // Header row
+  let html = '<div class="lc-hdr"><div class="lc-hdr-label"></div><div class="lc-hdr-stages">';
+  html += STAGES.map((s, i) => `<span>${STAGE_SHORT[i]}</span>`).join('');
+  html += '</div></div>';
+
+  sorted.forEach(c => {
+    const stageIdx = STAGES.indexOf(c.stage);
+    html += `<div class="lc-row">`;
+    html += `<div class="lc-label" onclick="showDetail('${escHtml(c.id)}')" title="${escHtml(c.name)}">${escHtml(c.name)}</div>`;
+    html += '<div class="lc-stages">';
+
+    STAGES.forEach((stage, si) => {
+      const isComplete = si < stageIdx || c.status === 'Complete';
+      const isCurrent = si === stageIdx && c.status !== 'Complete';
+      const bg = isComplete ? STAGE_COLORS[si] : isCurrent ? STAGE_COLORS_FADED[si] : '';
+      const cls = isComplete ? 'complete' : isCurrent ? 'current' : 'future';
+      const label = STAGE_SHORT[si];
+      const days = isCurrent && c.daysInStage > 0 ? `<span class="lc-days">${c.daysInStage}d</span>` : '';
+      html += `<div class="lc-block ${cls}" style="${bg ? 'background:' + bg : ''}" title="${stage}${isCurrent ? ' (' + c.daysInStage + ' days)' : ''}">${label}${days}</div>`;
+    });
+
+    html += '</div></div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// -- Budget vs Actual (HTML Table) -------------------------------------------
+function renderBudgetTimeline() {
+  const filtered = getFilteredCustomers();
+  const tbl = document.getElementById('budgetTable');
+
+  // Milestones with both planned and actual fields
+  const milestones = STAGES.filter(s => MILESTONE_MAP[s].planned && MILESTONE_MAP[s].actual);
+
+  const hdr = '<thead><tr><th>Company</th>' +
+    milestones.map(m => `<th colspan="3" style="text-align:center;border-bottom:2px solid ${STAGE_COLORS[STAGES.indexOf(m)]}">${m}</th>`).join('') +
+    '<th style="text-align:center">Avg Variance</th></tr>' +
+    '<tr><th></th>' +
+    milestones.map((_, mi) => { const sh = (mi % 2 === 1) ? ' class="bv-shaded"' : ''; return `<th${sh}>Plan</th><th${sh}>Actual</th><th${sh}>Var</th>`; }).join('') +
+    '<th></th></tr></thead>';
+
+  let totalVariances = 0;
+  let totalVarianceCount = 0;
+  let lateCount = 0;
+  let earlyCount = 0;
+  let onTimeCount = 0;
+
+  const rows = filtered.map(c => {
+    const r = c.raw;
+    let rowVariances = [];
+
+    const cells = milestones.map((ms, mi) => {
+      const map = MILESTONE_MAP[ms];
+      const planned = r[map.planned];
+      const actual = r[map.actual];
+      const variance = planned && actual ? Math.round((new Date(actual + 'T00:00:00') - new Date(planned + 'T00:00:00')) / 86400000) : null;
+
+      if (variance !== null) {
+        rowVariances.push(variance);
+        totalVariances += variance;
+        totalVarianceCount++;
+        if (variance > 0) lateCount++;
+        else if (variance < 0) earlyCount++;
+        else onTimeCount++;
+      }
+
+      const varBadge = variance !== null
+        ? variance > 0
+          ? `<span class="bv-badge bv-late">+${variance}d</span>`
+          : variance < 0
+            ? `<span class="bv-badge bv-early">${variance}d</span>`
+            : `<span class="bv-badge bv-ontime">On time</span>`
+        : !planned && !actual
+          ? '<span class="bv-pending">—</span>'
+          : planned && !actual
+            ? '<span class="bv-pending">Pending</span>'
+            : '<span class="bv-pending">—</span>';
+
+      const sh = (mi % 2 === 1) ? ' class="bv-shaded"' : '';
+      return `<td${sh}>${fmtDate(planned)}</td><td${sh}>${fmtDate(actual)}</td><td${sh} style="text-align:center">${varBadge}</td>`;
+    }).join('');
+
+    const avgVar = rowVariances.length > 0 ? Math.round(rowVariances.reduce((s, v) => s + v, 0) / rowVariances.length) : null;
+    const avgBadge = avgVar !== null
+      ? avgVar > 0
+        ? `<span class="bv-badge bv-late">+${avgVar}d</span>`
+        : avgVar < 0
+          ? `<span class="bv-badge bv-early">${avgVar}d</span>`
+          : `<span class="bv-badge bv-ontime">On time</span>`
+      : '<span class="bv-pending">—</span>';
+
+    return `<tr><td><span class="company-link" onclick="showDetail('${escHtml(c.id)}')">${escHtml(c.name)}</span></td>${cells}<td style="text-align:center">${avgBadge}</td></tr>`;
+  }).join('');
+
+  // Summary footer row
+  const avgAll = totalVarianceCount > 0 ? Math.round(totalVariances / totalVarianceCount) : null;
+  const avgAllBadge = avgAll !== null
+    ? avgAll > 0 ? `<span class="bv-badge bv-late">+${avgAll}d avg</span>` : avgAll < 0 ? `<span class="bv-badge bv-early">${avgAll}d avg</span>` : `<span class="bv-badge bv-ontime">On time</span>`
+    : '';
+  const summaryRow = `<tr style="background:var(--bg2);font-weight:600"><td>Summary (${filtered.length} customers)</td>` +
+    milestones.map((_, mi) => { const sh = (mi % 2 === 1) ? ' class="bv-shaded"' : ''; return `<td${sh}></td><td${sh}></td><td${sh}></td>`; }).join('') +
+    `<td style="text-align:center">${avgAllBadge}</td></tr>`;
+
+  tbl.innerHTML = hdr + '<tbody>' + rows + summaryRow + '</tbody>';
+
+  // Stats bar below table
+  const statsDiv = tbl.parentElement.querySelector('.budget-summary');
+  if (statsDiv) statsDiv.remove();
+  if (totalVarianceCount > 0) {
+    const stats = document.createElement('div');
+    stats.className = 'budget-summary';
+    stats.innerHTML = `
+      <div class="bs-item"><strong>${totalVarianceCount}</strong> milestones tracked</div>
+      <div class="bs-item"><strong style="color:var(--green)">${earlyCount + onTimeCount}</strong> on time or early</div>
+      <div class="bs-item"><strong style="color:var(--red)">${lateCount}</strong> late</div>
+      <div class="bs-item">${avgAllBadge}</div>
+    `;
+    tbl.parentElement.appendChild(stats);
+  }
+}
+
+// -- KPI Table ---------------------------------------------------------------
+function renderKPITable() {
+  const tbl = document.getElementById('kpiTable');
+  tbl.innerHTML = `<thead><tr><th>Company</th><th>Cohort</th><th>Base FDE</th><th>Voice FDE</th><th>Stage</th><th class="num">CSAT</th><th class="num">Calls (30d)</th><th>Deflection</th><th class="num">Days in Stage</th><th>Health</th><th>Status</th></tr></thead><tbody>${
+    getFilteredCustomers().map(c => `<tr onclick="showDetail('${escHtml(c.id)}')" style="cursor:pointer">
+      <td><strong>${escHtml(c.name)}</strong></td>
+      <td>${escHtml(c.cohort)}</td>
+      <td>${escHtml(c.fde)}</td>
+      <td>${escHtml(c.voiceFde)}</td>
+      <td>${escHtml(c.stage)}</td>
+      <td class="num">${c.csat != null ? c.csat : '-'}</td>
+      <td class="num">${c.calls30d || 0}</td>
+      <td>${escHtml(c.deflection) || '-'}</td>
+      <td class="num">${c.daysInStage}</td>
+      <td>${healthBadge(c.health)}</td>
+      <td>${statusBadge(c.status)}</td>
+    </tr>`).join('')
+  }</tbody>`;
+}
+
+// -- Command Center ----------------------------------------------------------
+function cmdSelect(cid, field, options, value) {
+  return `<select onchange="cmdCenterChange('${cid}','${field}',this.value)">${options.map(o => `<option value="${escHtml(o)}"${o === value ? ' selected' : ''}>${escHtml(o || '\u2014')}</option>`).join('')}</select>`;
+}
+function cmdDate(cid, field, value) {
+  return `<input type="date" value="${value || ''}" onchange="cmdCenterChange('${cid}','${field}',this.value)">`;
+}
+function cmdCb(cid, field, checked) {
+  return `<input type="checkbox" ${checked ? 'checked' : ''} onchange="cmdCenterChange('${cid}','${field}',this.checked)">`;
+}
+function cmdText(cid, field, value) {
+  return `<input type="text" value="${escHtml(value)}" onchange="cmdCenterChange('${cid}','${field}',this.value)" placeholder="\u2014">`;
+}
+
+function renderCommandCenter() {
+  const filtered = getFilteredCustomers();
+  const tbl = document.getElementById('cmdTable');
+  const hdr = '<thead><tr>' +
+    '<th>Company</th><th>Stage</th><th>Health</th>' +
+    '<th>Base FDE</th><th>Voice FDE</th><th>Pri</th>' +
+    '<th>Welcome</th><th>Alignment</th><th>HOAi Test</th><th>Cust Test</th><th>Live Test</th><th>Activation</th>' +
+    '<th title="Questionnaire">Q</th><th title="AOP Config">A</th><th title="HOAi Testing">H</th><th title="Customer Testing">C</th><th title="Live Testing">L</th>' +
+    '<th>Delay</th><th>Notes</th>' +
+    '</tr></thead>';
+  const rows = filtered.map(c => {
+    const r = c.raw;
+    const id = escHtml(c.id);
+    return `<tr data-cid="${id}">
+      <td><strong style="cursor:pointer;color:var(--primary)" onclick="showDetail('${id}')">${escHtml(c.name)}</strong></td>
+      <td>${stageBadge(c.stage)}</td>
+      <td>${healthBadge(c.health)}</td>
+      <td>${cmdSelect(id, 'base_fde', FDE_LIST, r.base_fde || r.fde || '')}</td>
+      <td>${cmdSelect(id, 'voice_fde', FDE_LIST, r.voice_fde || '')}</td>
+      <td>${cmdSelect(id, 'priority', PRIORITY_LIST, r.priority || '')}</td>
+      <td>${cmdDate(id, 'welcome_package_date', r.welcome_package_date)}</td>
+      <td>${cmdDate(id, 'alignment_call_date', r.alignment_call_date)}</td>
+      <td>${cmdDate(id, 'hoai_testing_date', r.hoai_testing_date)}</td>
+      <td>${cmdDate(id, 'customer_testing_date', r.customer_testing_date)}</td>
+      <td>${cmdDate(id, 'live_testing_date', r.live_testing_date)}</td>
+      <td>${cmdDate(id, 'activation_date', r.activation_date)}</td>
+      <td style="text-align:center">${cmdCb(id, 'questionnaire_complete', r.questionnaire_complete)}</td>
+      <td style="text-align:center">${cmdCb(id, 'aop_config', r.aop_config)}</td>
+      <td style="text-align:center">${cmdCb(id, 'hoai_testing_complete', r.hoai_testing_complete)}</td>
+      <td style="text-align:center">${cmdCb(id, 'customer_testing_complete', r.customer_testing_complete)}</td>
+      <td style="text-align:center">${cmdCb(id, 'live_testing_complete', r.live_testing_complete)}</td>
+      <td>${cmdSelect(id, 'delay_reason', DELAY_REASONS, r.delay_reason || '')}</td>
+      <td>${cmdText(id, 'implementation_notes', r.implementation_notes || '')}</td>
+    </tr>`;
+  }).join('');
+  tbl.innerHTML = hdr + '<tbody>' + rows + '</tbody>';
+}
+
+function cmdCenterChange(customerId, field, value) {
+  const c = customers.find(x => x.id === customerId);
+  if (!c) return;
+  const r = c.raw;
+  if (field === 'base_fde') { r.base_fde = value; r.fde = value; }
+  else if (field === 'voice_fde') { r.voice_fde = value; }
+  else if (field === 'priority') { r.priority = value; }
+  else if (field === 'delay_reason') { r.delay_reason = value; }
+  else if (field === 'implementation_notes') { r.implementation_notes = value; }
+  else if (field.endsWith('_complete') || field === 'aop_config') { r[field] = !!value; }
+  else { r[field] = value || null; }
+  recomputeAll(r);
+  syncCustomerFromRaw(c);
+  markDirty();
+  // Update computed cells in-place
+  const row = document.querySelector(`tr[data-cid="${CSS.escape(customerId)}"]`);
+  if (row) {
+    row.cells[1].innerHTML = stageBadge(c.stage);
+    row.cells[2].innerHTML = healthBadge(c.health);
+  }
+}
+
+async function cmdCenterSaveAll() {
+  if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
+  updateSaveStatus('Saving...');
+  saveToLocalStorage();
+  await saveDataToDisk();
+  clearDirty();
+  updateSaveStatus('Saved ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+  renderAll();
+}
+
+// -- Detail overlay (read-only) ----------------------------------------------
+function showDetail(id) {
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  currentDetailId = id;
+  document.getElementById('detailTitle').textContent = c.name;
+
+  const stageIdx = STAGES.indexOf(c.stage);
+  const timeline = STAGES.map((ms, i) => {
+    const isComplete = i < stageIdx || c.status === 'Complete';
+    const isActive = i === stageIdx && c.status !== 'Complete';
+    const isBlocked = isActive && (c.status === 'Blocked' || c.status === 'Stalled');
+    const dotClass = isComplete ? 'complete' : isBlocked ? 'blocked' : isActive ? 'active' : '';
+    const connClass = isComplete ? 'complete' : isBlocked ? 'blocked' : isActive ? 'active' : '';
+    return (i > 0 ? `<div class="ms-conn ${connClass}"></div>` : '') +
+      `<div class="ms-dot ${dotClass}" title="${ms}">${STAGE_SHORT[i]}</div>`;
+  }).join('');
+
+  const r = c.raw;
+  const dateRows = STAGES.map(ms => {
+    const p = c.dates[ms] ? c.dates[ms].planned : null;
+    const a = c.dates[ms] ? c.dates[ms].actual : null;
+    const slipped = p && a && new Date(a) > new Date(p);
+    const variance = p && a ? Math.round((new Date(a) - new Date(p)) / 86400000) : null;
+    return `<tr><td style="font-size:11px">${ms}</td><td style="font-size:11px">${fmtDate(p)}</td>
+      <td style="font-size:11px;${slipped ? 'color:var(--red);font-weight:600' : a ? 'color:var(--green)' : ''}">${fmtDate(a)}</td>
+      <td style="font-size:11px;text-align:right;${variance > 0 ? 'color:var(--red)' : variance < 0 ? 'color:var(--green)' : ''}">${variance !== null ? (variance > 0 ? '+' : '') + variance + 'd' : '-'}</td></tr>`;
+  }).join('');
+
+  const checkIcon = (v) => v ? '<span style="color:var(--green);font-weight:600">✓</span>' : '<span style="color:var(--muted)">—</span>';
+
+  document.getElementById('detailBody').innerHTML = `
+    <div class="ms-timeline">${timeline}</div>
+
+    <div style="margin:16px 0 8px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px">Summary</div>
+    <div class="detail-grid">
+      <div class="detail-field"><label>Status</label><span>${statusBadge(c.status)}</span></div>
+      <div class="detail-field"><label>Health</label><span>${healthBadge(c.health)}</span></div>
+      <div class="detail-field"><label>Current Stage</label><span>${escHtml(c.stage)}</span></div>
+      <div class="detail-field"><label>Days in Stage</label><span>${c.daysInStage}</span></div>
+      <div class="detail-field"><label>Base FDE</label><span>${escHtml(c.fde) || '—'}</span></div>
+      <div class="detail-field"><label>Priority</label><span>${escHtml(c.priority) || '—'}</span></div>
+      <div class="detail-field"><label>CSAT</label><span>${c.csat != null ? c.csat : '—'}</span></div>
+      <div class="detail-field"><label>Calls (30d)</label><span>${c.calls30d || 0}</span></div>
+      <div class="detail-field"><label>Deflection</label><span>${escHtml(c.deflection) || '—'}</span></div>
+      <div class="detail-field"><label>Cohort</label><span>${escHtml(c.cohort) || '—'}</span></div>
+      <div class="detail-field"><label>Main / Overflow</label><span>${escHtml(c.mainOverflow) || '—'}</span></div>
+      <div class="detail-field"><label>Voice FDE</label><span>${escHtml(c.voiceFde) || '—'}</span></div>
+    </div>
+    ${c.nextAction ? `<div class="detail-field" style="margin-bottom:12px"><label>Next Action</label><span>${escHtml(c.nextAction)}</span></div>` : ''}
+
+    <div style="margin:20px 0 8px;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px">Completion</div>
+    <div class="detail-grid">
+      <div class="detail-field"><label>Questionnaire</label><span>${checkIcon(r.questionnaire_complete)}</span></div>
+      <div class="detail-field"><label>AOP Config</label><span>${checkIcon(r.aop_config)}</span></div>
+      <div class="detail-field"><label>HOAi Testing</label><span>${checkIcon(r.hoai_testing_complete)}</span></div>
+      <div class="detail-field"><label>Customer Testing</label><span>${checkIcon(r.customer_testing_complete)}</span></div>
+      <div class="detail-field"><label>Live Testing</label><span>${checkIcon(r.live_testing_complete)}</span></div>
+    </div>
+
+    ${r.delay_reason ? `<div class="detail-field" style="margin:8px 0"><label>Delay Reason</label><span>${escHtml(r.delay_reason)}</span></div>` : ''}
+    ${r.implementation_notes ? `<div class="detail-field" style="margin:8px 0"><label>Notes</label><span style="white-space:pre-wrap">${escHtml(r.implementation_notes)}</span></div>` : ''}
+
+    <div class="sec"><div class="sec-ttl">Budget vs. Actual</div></div>
+    <div class="card" style="margin-top:8px"><table>
+      <thead><tr><th>Milestone</th><th>Planned</th><th>Actual</th><th class="num">Variance</th></tr></thead>
+      <tbody>${dateRows}</tbody>
+    </table></div>
+
+    ${buildWorkflowSection(c)}
+
+    <div style="margin-top:16px;text-align:center">
+      <span style="font-size:11px;color:var(--muted)">Edit fields in the Command Center tab</span>
+    </div>
+  `;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() {
+  currentDetailId = null;
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+document.getElementById('detailOverlay').addEventListener('click', e => { if (e.target.id === 'detailOverlay') closeDetail(); });
+
+// -- Workflow section in detail overlay ------------------------------------
+function buildWorkflowSection(c) {
+  const wfRows = [];
+  const r = c.raw;
+  const cName = c.name;
+  const history = r.trigger_history || [];
+
+  function lastFired(triggerCode) {
+    const matches = history.filter(h => h.trigger === triggerCode);
+    return matches.length ? matches[matches.length - 1] : null;
+  }
+
+  // Alignment Deck (T3)
+  if (r.alignment_call_date) {
+    const goLive = r.activation_date || r.planned_activation || '';
+    const cmd = 'npm run alignment-deck -- "' + cName + '" ' + goLive;
+    const t3 = lastFired('T3');
+    let status;
+    if (t3) {
+      status = '<span style="color:var(--green)">Generated ' + fmtDate(t3.timestamp.slice(0,10)) + '</span>';
+    } else if (STAGES.indexOf(c.stage) >= STAGES.indexOf('HOAi Testing')) {
+      status = '<span style="color:var(--amber)">Past alignment — deck not generated</span>';
+    } else {
+      status = '<span style="color:var(--primary)">Pending — alignment: ' + fmtDate(r.alignment_call_date) + '</span>';
+    }
+    wfRows.push({ name: 'Alignment Deck', desc: 'T3 — auto-fires 2 days before alignment call', status, cmd });
+  }
+
+  // Call Analysis phases (T5, T8, T10)
+  const phases = [
+    { field: 'hoai_testing_date', label: 'HOAi Testing', trigger: 'T5' },
+    { field: 'customer_testing_date', label: 'Customer Testing', trigger: 'T8' },
+    { field: 'live_testing_date', label: 'Live Testing', trigger: 'T10' },
+  ];
+  phases.forEach(p => {
+    if (r[p.field]) {
+      const start = r[p.field];
+      const cmd = '/analyze-calls ' + cName + ' ' + start;
+      const t = lastFired(p.trigger);
+      let status;
+      if (t) {
+        status = '<span style="color:var(--green)">Analyzed ' + fmtDate(t.timestamp.slice(0,10)) + '</span>';
+      } else if (new Date(start + 'T00:00:00') <= new Date()) {
+        status = '<span style="color:var(--amber)">Date passed — not yet analyzed</span>';
+      } else {
+        status = '<span style="color:var(--muted)">Scheduled: ' + fmtDate(start) + '</span>';
+      }
+      wfRows.push({ name: 'Call Analysis — ' + p.label, desc: p.trigger + ' — auto-fires on ' + p.label.toLowerCase() + ' date', status, cmd });
+    }
+  });
+
+  if (wfRows.length === 0 && history.length === 0) return '';
+
+  let html = '<div class="wf-section"><div class="sec"><div class="sec-ttl">Workflows</div></div>';
+
+  if (wfRows.length > 0) {
+    html += wfRows.map(w =>
+      '<div class="wf-row"><div class="wf-info">' +
+      '<div class="wf-name">' + escHtml(w.name) + '</div>' +
+      '<div class="wf-desc">' + escHtml(w.desc) + '</div>' +
+      '<div class="wf-status">' + w.status + '</div>' +
+      '</div><button class="btn-copy" onclick="copyCmd(this,\'' + escHtml(w.cmd).replace(/'/g, "\\'") + '\')" title="' + escHtml(w.cmd) + '">Copy Command</button></div>'
+    ).join('');
+  }
+
+  // Trigger log — last 5 events
+  if (history.length > 0) {
+    html += '<div style="margin-top:12px"><div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">Trigger Log</div>';
+    html += history.slice(-5).reverse().map(h =>
+      '<div style="font-size:11px;padding:5px 0;border-bottom:1px solid var(--border)">' +
+      '<span class="badge b-gray" style="margin-right:6px">' + escHtml(h.trigger) + '</span>' +
+      '<span style="color:var(--text)">' + escHtml(h.action) + '</span>' +
+      '<span style="color:var(--muted);margin-left:8px">' + fmtDate((h.timestamp || '').slice(0,10)) + '</span>' +
+      '</div>'
+    ).join('') + '</div>';
+  }
+
+  return html + '</div>';
+}
+
+function copyCmd(btn, cmd) {
+  navigator.clipboard.writeText(cmd).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy Command'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// -- Add Customer ------------------------------------------------------------
+function addCustomer() {
+  const opts = (list) => list.map(v => `<option value="${escHtml(v)}">${v || '\u2014'}</option>`).join('');
+  document.getElementById('addBaseFde').innerHTML = opts(FDE_LIST);
+  document.getElementById('addVoiceFde').innerHTML = opts(FDE_LIST);
+  document.getElementById('addPriority').innerHTML = opts(PRIORITY_LIST);
+  const now = new Date();
+  document.getElementById('addCohort').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('addName').value = '';
+  document.getElementById('addWelcome').value = '';
+  document.getElementById('addNotes').value = '';
+  document.getElementById('addOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('addName').focus(), 100);
+}
+
+function closeAddModal() {
+  document.getElementById('addOverlay').classList.remove('open');
+}
+
+function submitAddCustomer() {
+  const name = document.getElementById('addName').value.trim();
+  if (!name) { document.getElementById('addName').focus(); return; }
+  const raw = {
+    page_id: 'local-' + Date.now(),
+    company_name: name,
+    notion_url: '',
+    welcome_package_date: document.getElementById('addWelcome').value || null,
+    alignment_call_date: null, hoai_testing_date: null,
+    customer_testing_date: null, live_testing_date: null, activation_date: null,
+    questionnaire_complete: false, aop_config: false, hoai_testing_complete: false,
+    customer_testing_complete: false, live_testing_complete: false,
+    fde: document.getElementById('addBaseFde').value || null,
+    base_fde: document.getElementById('addBaseFde').value || null,
+    voice_fde: document.getElementById('addVoiceFde').value || null,
+    priority: document.getElementById('addPriority').value || null,
+    status: null, health: null, current_stage: null,
+    cohort: document.getElementById('addCohort').value || '',
+    implementation_notes: document.getElementById('addNotes').value || '',
+    next_action: '', delay_reason: '',
+    calls_30d: 0, deflection_rate: '', csat: null,
+    planned_welcome_package: null, planned_questionnaire: null, planned_aop: null,
+    planned_alignment_call: null, planned_hoai_testing: null, planned_customer_testing: null,
+    planned_live_testing: null, planned_activation: null,
+    main_overflow: null, calls_enabled: false, sms_enabled: false, webchat_enabled: false,
+  };
+  recomputeAll(raw);
+  CONSOLE_DATA.customers.push(raw);
+  customers.push(buildCustomerView(raw));
+  closeAddModal();
+  markDirty();
+  renderAll();
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  document.querySelector('[data-tab="command"]').classList.add('active');
+  document.getElementById('panel-command').classList.add('active');
+}
+
+// -- Dirty tracking + auto-save ----------------------------------------------
+function markDirty() {
+  isDirty = true;
+  const dot = document.getElementById('dirtyDot');
+  if (dot) dot.style.display = 'inline-block';
+  updateSaveStatus('Unsaved changes...');
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => { autoSave(); }, 2000);
+}
+function clearDirty() {
+  isDirty = false;
+  const dot = document.getElementById('dirtyDot');
+  if (dot) dot.style.display = 'none';
+  setTimeout(() => {
+    if (!isDirty) {
+      const cmdBar = document.getElementById('cmdSaveBar');
+      if (cmdBar) cmdBar.style.display = 'none';
+    }
+  }, 3000);
+}
+function updateSaveStatus(msg) {
+  const status = document.getElementById('cmdSaveStatus');
+  if (status) status.textContent = msg;
+  const cmdBar = document.getElementById('cmdSaveBar');
+  if (cmdBar) cmdBar.style.display = 'flex';
+}
+async function autoSave() {
+  autoSaveTimer = null;
+  if (!isDirty) return;
+  updateSaveStatus('Saving...');
+  saveToLocalStorage();
+  if (dataFileHandle) {
+    try { await saveDataToDisk(); } catch (e) { console.warn('File save failed:', e); }
+  }
+  clearDirty();
+  updateSaveStatus('Saved ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+}
+
+function syncCustomerFromRaw(c) {
+  const r = c.raw;
+  c.stage = r.computed_stage || r.current_stage || '';
+  c.status = r.computed_status || r.status || '';
+  c.health = r.computed_health || r.health || '';
+  c.fde = r.base_fde || r.fde || '';
+  c.voiceFde = r.voice_fde || '';
+  c.priority = r.priority || '';
+  c.daysInStage = r.computed_days_in_stage || 0;
+  c.delayReason = r.delay_reason || '';
+  c.notes = r.implementation_notes || '';
+  c.nextAction = r.computed_next_action || r.next_action || '';
+  STAGES.forEach(ms => {
+    const map = MILESTONE_MAP[ms];
+    if (!map) return;
+    c.dates[ms] = {
+      planned: map.planned ? r[map.planned] : null,
+      actual: map.actual ? r[map.actual] : null,
+    };
+  });
+}
+
+function exportData() {
+  CONSOLE_DATA.customers = customers.map(c => c.raw);
+  CONSOLE_DATA.generated_at = new Date().toISOString();
+  const json = JSON.stringify(CONSOLE_DATA, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      CONSOLE_DATA = JSON.parse(await file.text());
+      saveToLocalStorage();
+      initDashboard();
+    } catch (e) { console.error('Import failed:', e); }
+  };
+  input.click();
+}
+
+async function resetToServerData() {
+  if (!confirm('Discard local edits and reload from server?')) return;
+  localStorage.removeItem(LS_KEY);
+  dataFileHandle = null;
+  await bootData();
+}
+
+async function saveDataToDisk() {
+  CONSOLE_DATA.customers = customers.map(c => c.raw);
+  CONSOLE_DATA.generated_at = new Date().toISOString();
+  CONSOLE_DATA.date = new Date().toISOString().slice(0,10);
+  CONSOLE_DATA.customer_count = customers.length;
+
+  const json = JSON.stringify(CONSOLE_DATA, null, 2);
+
+  if (window.showSaveFilePicker) {
+    try {
+      if (!dataFileHandle) {
+        dataFileHandle = await window.showSaveFilePicker({
+          suggestedName: 'data.json',
+          types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+        });
+      }
+      const writable = await dataFileHandle.createWritable();
+      await writable.write(json);
+      await writable.close();
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      console.warn('File System Access failed, falling back to download', e);
+    }
+  }
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// Chart.js theme
+Chart.defaults.font.family = "'DM Sans', -apple-system, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#5a6068';
+Chart.defaults.borderColor = '#dee2e5';
+
+// Warn before closing with unsaved changes
+window.addEventListener('beforeunload', (e) => {
+  if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// Boot
+bootData();
+</script>
+</body>
+</html>
